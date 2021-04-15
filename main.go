@@ -7,11 +7,15 @@ import (
 )
 import "github.com/valyala/fasthttp"
 
-
 var templatesMap = make(map[string][]gocv.Mat)
 
 func main() {
+	log.Println("Started")
+
 	r := router.New()
+	r.GET("/ping", func(ctx *fasthttp.RequestCtx) {
+		ctx.Response.SetBodyString("Alive")
+	})
 	r.POST("/template/upload", uploadTemplatesHandler)
 	r.POST("/template/detect/{templateId}", detectHandler)
 
