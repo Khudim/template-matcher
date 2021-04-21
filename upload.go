@@ -1,28 +1,52 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/valyala/fasthttp"
 	"gocv.io/x/gocv"
+	"io"
 	"log"
 	"strconv"
 	"strings"
 )
 
 func uploadTemplatesHandler(ctx *fasthttp.RequestCtx) {
-	body := ctx.Request.Body()
-	templates := parseImages(&ctx.Request.Header, body)
-	if len(templates) == 0 {
-		ctx.Response.SetStatusCode(400)
+	form, err := ctx.Request.MultipartForm()
+	if err != nil {
+		ctx.Error(err.Error(), 400)
 		return
 	}
-	templatesId := uuid.New().String()
-	templatesMap[templatesId] = templates
+	var templates []gocv.Mat
+	for _, v := range form.File {
+		for _, t := range v {
+			f, _ := t.Open()
+			b := new(bytes.Buffer)
+			_, er := io.Copy(b, f)
+			if er != nil {
+				ctx.Error(er.Error(), 400)
+				return
+			}
+			if template, err := gocv.IMDecode(b.Bytes(), gocv.IMReadGrayScale); err == nil {
+				templates = append(templates, template)
+			}
 
-	ctx.Response.SetBody([]byte(templatesId))
+		}
+	}
+	// templates := parseImages(&ctx.Request.Header, body)
+	if len(templates) == 0 {
+		ctx.Error("Can't load templates", 400)
+		return
+	}
+	templateId := uuid.New().String()
+	templatesMap[templateId] = templates
 
-	ctx.SetContentType("application/octet-stream")
+	response := fmt.Sprintf("{\"templateId\":\"%s\"}", templateId)
+
+	ctx.Response.SetBodyString(response)
+
+	ctx.SetContentType("application/json")
 
 }
 
