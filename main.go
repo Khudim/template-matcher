@@ -2,13 +2,10 @@ package main
 
 import (
 	"github.com/fasthttp/router"
-	"gocv.io/x/gocv"
 	"log"
 	"os"
 )
 import "github.com/valyala/fasthttp"
-
-var templatesMap = make(map[string][]gocv.Mat)
 
 func main() {
 	port := os.Getenv("PORT")
